@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>塔羅牌抽卡</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            background: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            width: 100%;
+        }
+
+        h1 {
+            color: black;
+            margin-bottom: 30px;
+        }
+
+        .controls {
+            margin-bottom: 30px;
+        }
+
+        label {
+            margin-right: 10px;
+        }
+
+        select {
+            padding: 5px 10px;
+            margin-right: 20px;
+        }
+
+        button {
+            padding: 5px 20px;
+            cursor: pointer;
+        }
+
+        .cards-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: nowrap;
+            gap: 20px;
+            margin-top: 30px;
+            overflow-x: auto;
+        }
+
+        .card {
+            background: white;
+            padding: 10px;
+            width: 200px;
+            flex-shrink: 0;
+        }
+
+        .card-image {
+            width: 100%;
+            height: auto;
+        }
+
+        .card.reversed .card-image {
+            transform: rotate(180deg);
+        }
+
+        .card-name {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="controls">
+            <label for="cardCount">選擇抽卡數量：</label>
+            <select id="cardCount">
+                <option value="1">1 張</option>
+                <option value="3" selected>3 張</option>
+                <option value="4">4 張</option>
+                <option value="5">5 張</option>
+            </select>
+            <button onclick="drawCards()">抽牌</button>
+        </div>
+
+        <div class="cards-container" id="cardsContainer"></div>
+    </div>
+
+    <script>
+        // 78 張塔羅牌 - 包含名稱和圖檔路徑
+        const tarotCards = [
+            // 大阿爾克那 (22張)
+            { name: "愚者", image: "fool.jpg" },
+            { name: "魔術師", image: "magician.jpg" },
+            { name: "女祭司", image: "high-priestess.jpg" },
+            { name: "皇后", image: "empress.jpg" },
+            { name: "皇帝", image: "emperor.jpg" },
+            { name: "教皇", image: "hierophant.jpg" },
+            { name: "戀人", image: "lovers.jpg" },
+            { name: "戰車", image: "chariot.jpg" },
+            { name: "力量", image: "strength.jpg" },
+            { name: "隱者", image: "hermit.jpg" },
+            { name: "命運之輪", image: "fortune-wheel.jpg" },
+            { name: "正義", image: "justice.jpg" },
+            { name: "倒吊人", image: "hanged-man.jpg" },
+            { name: "死神", image: "death.jpg" },
+            { name: "節制", image: "temperance.jpg" },
+            { name: "惡魔", image: "devil.jpg" },
+            { name: "高塔", image: "tower.jpg" },
+            { name: "星星", image: "stars.jpg" },
+            { name: "月亮", image: "moon.jpg" },
+            { name: "太陽", image: "sun.jpg" },
+            { name: "審判", image: "judgement.jpg" },
+            { name: "世界", image: "world.jpg" },
+            
+            // 權杖牌組 (14張)
+            { name: "權杖一", image: "ace-wands.jpg" },
+            { name: "權杖二", image: "two-wands.jpg" },
+            { name: "權杖三", image: "three-wands.jpg" },
+            { name: "權杖四", image: "four-wands.jpg" },
+            { name: "權杖五", image: "five-wands.jpg" },
+            { name: "權杖六", image: "six-wands.jpg" },
+            { name: "權杖七", image: "seven-wands.jpg" },
+            { name: "權杖八", image: "eight-wands.jpg" },
+            { name: "權杖九", image: "nine-wands.jpg" },
+            { name: "權杖十", image: "ten-wands.jpg" },
+            { name: "權杖侍者", image: "page-wands.jpg" },
+            { name: "權杖騎士", image: "knight-wands.jpg" },
+            { name: "權杖王后", image: "queen-wands.jpg" },
+            { name: "權杖國王", image: "king-wands.jpg" },
+            
+            // 聖杯牌組 (14張)
+            { name: "聖杯一", image: "ace-cups.jpg" },
+            { name: "聖杯二", image: "two-cups.jpg" },
+            { name: "聖杯三", image: "three-cups.jpg" },
+            { name: "聖杯四", image: "four-cups.jpg" },
+            { name: "聖杯五", image: "five-cups.jpg" },
+            { name: "聖杯六", image: "six-cups.jpg" },
+            { name: "聖杯七", image: "seven-cups.jpg" },
+            { name: "聖杯八", image: "eight-cups.jpg" },
+            { name: "聖杯九", image: "nine-cups.jpg" },
+            { name: "聖杯十", image: "ten-cups.jpg" },
+            { name: "聖杯侍者", image: "page-cups.jpg" },
+            { name: "聖杯騎士", image: "knight-cups.jpg" },
+            { name: "聖杯王后", image: "queen-cups.jpg" },
+            { name: "聖杯國王", image: "king-cups.jpg" },
+            
+            // 寶劍牌組 (14張)
+            { name: "寶劍一", image: "ace-swords.jpg" },
+            { name: "寶劍二", image: "two-swords.jpg" },
+            { name: "寶劍三", image: "three-swords.jpg" },
+            { name: "寶劍四", image: "four-swords.jpg" },
+            { name: "寶劍五", image: "five-swords.jpg" },
+            { name: "寶劍六", image: "six-swords.jpg" },
+            { name: "寶劍七", image: "seven-swords.jpg" },
+            { name: "寶劍八", image: "eight-swords.jpg" },
+            { name: "寶劍九", image: "nine-swords.jpg" },
+            { name: "寶劍十", image: "ten-swords.jpg" },
+            { name: "寶劍侍者", image: "page-swords.jpg" },
+            { name: "寶劍騎士", image: "knight-swords.jpg" },
+            { name: "寶劍王后", image: "queen-swords.jpg" },
+            { name: "寶劍國王", image: "king-swords.jpg" },
+            
+            // 錢幣牌組 (14張)
+            { name: "錢幣一", image: "ace-pentacles.jpg" },
+            { name: "錢幣二", image: "two-pentacles.jpg" },
+            { name: "錢幣三", image: "three-pentacles.jpg" },
+            { name: "錢幣四", image: "four-pentacles.jpg" },
+            { name: "錢幣五", image: "five-pentacles.jpg" },
+            { name: "錢幣六", image: "six-pentacles.jpg" },
+            { name: "錢幣七", image: "seven-pentacles.jpg" },
+            { name: "錢幣八", image: "eight-pentacles.jpg" },
+            { name: "錢幣九", image: "nine-pentacles.jpg" },
+            { name: "錢幣十", image: "ten-pentacles.jpg" },
+            { name: "錢幣侍者", image: "page-pentacles.jpg" },
+            { name: "錢幣騎士", image: "knight-pentacles.jpg" },
+            { name: "錢幣王后", image: "queen-pentacles.jpg" },
+            { name: "錢幣國王", image: "king-pentacles.jpg" }
+        ];
+
+        function drawCards() {
+            const count = parseInt(document.getElementById('cardCount').value);
+            const container = document.getElementById('cardsContainer');
+            
+            // 清空容器
+            container.innerHTML = '';
+            
+            // 隨機選擇不重複的牌
+            const selectedIndices = [];
+            while (selectedIndices.length < count) {
+                const randomIndex = Math.floor(Math.random() * tarotCards.length);
+                if (!selectedIndices.includes(randomIndex)) {
+                    selectedIndices.push(randomIndex);
+                }
+            }
+            
+            // 顯示選中的牌
+            selectedIndices.forEach((index) => {
+                const isReversed = Math.random() < 0.5; // 50% 機率逆位
+                const card = tarotCards[index];
+                const cardElement = document.createElement('div');
+                cardElement.className = isReversed ? 'card reversed' : 'card';
+                
+                cardElement.innerHTML = `
+                    <img src="${card.image}" alt="${card.name}" class="card-image">
+                    <div class="card-name"> ${card.name}${isReversed ? '(逆)' : '(正)'}</div>
+                `;
+                
+                container.appendChild(cardElement);
+            });
+        }
+    </script>
+</body>
+</html>
